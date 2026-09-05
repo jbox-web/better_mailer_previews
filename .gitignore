@@ -1,13 +1,22 @@
-/.bundle/
-/doc/
-/log/*.log
-/pkg/
-/tmp/
-/test/dummy/db/*.sqlite3
-/test/dummy/db/*.sqlite3-*
-/test/dummy/log/*.log
-/test/dummy/storage/
-/test/dummy/tmp/
+# Ignore bundler config.
+.bundle/
 
+# Ignore Gemfile.lock
+Gemfile.lock
+gemfiles/*.lock
 
-*.gem
+# Ignore test files
+coverage/
+
+# Ignore dummy app files
+spec/dummy/db/*.sqlite3
+spec/dummy/db/*.sqlite3-*
+spec/dummy/log/*.log
+spec/dummy/tmp/
+spec/dummy/public/assets/
+
+# Ignore MacOS files
+.DS_Store
+
+# Ignore codegraph db
+/.codegraph
