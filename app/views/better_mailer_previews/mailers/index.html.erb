@@ -1,23 +1,67 @@
-<div class="max-w-7xl mx-auto">
-  <p class="text-6xl font-medium tracking-tighter">Better Mailer Previews <span class="text-xs font-light tracking-normal">v<%= BetterMailerPreviews::VERSION::STRING %></span></p>
-  <div class="mt-4 grid grid-cols-4 gap-x-4 sticky top-8 z-10 border p-2 bg-gray-50/30 backdrop-blur-md w-fit rounded-sm">
-    <% @urls_by_mailer.each do |mailer_name, urls| %>
-      <%= link_to "▶ #{mailer_name.titleize}", "##{mailer_name}", class: "text-sm hover:underline" unless urls.empty? %>
-    <% end %>
-  </div>
-  <% @urls_by_mailer.each do |mailer_name, urls| %>
-    <% next if urls.empty? %>
-    <div id="<%= mailer_name %>" class="flex my-24">
-      <p class="text-xl font-light w-64"><%= mailer_name.titleize %></p>
-      <div class="border p-6 grid grid-cols-3 gap-x-8 gap-y-16">
-        <% urls.each do |url| %>
-          <div class="flex flex-col space-y-4 wrap">
-            <iframe src="<%= url %>" frameborder="0" class="frame border border-gray-300" loading="lazy"></iframe>
-            <%= link_to preview_text_for_url(url), preview_path_for_url(url), class: "!-mt-[400px] hover:underline" %>
-          </div>
-        <% end %>
-      </div>
+<% mailers = @urls_by_mailer.reject { |_name, urls| urls.empty? } %>
+
+<div class="max-w-[1800px] mx-auto">
+  <header class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+    <h1 class="text-4xl font-semibold tracking-tight">Better Mailer Previews</h1>
+    <span class="text-xs text-gray-400 font-mono">v<%= BetterMailerPreviews::VERSION::STRING %></span>
+    <span class="text-sm text-gray-500">
+      <%= pluralize(mailers.size, "mailer") %>, <%= pluralize(mailers.values.sum(&:size), "preview") %>
+    </span>
+  </header>
+
+  <% if mailers.empty? %>
+    <div class="mt-10 border border-dashed border-gray-300 bg-white rounded-lg p-10 text-center">
+      <p class="text-lg font-medium">No mailer previews found</p>
+      <p class="mt-2 text-sm text-gray-500">
+        Define an <code class="font-mono">ActionMailer::Preview</code> class under your preview path
+        and it will show up here.
+      </p>
     </div>
+  <% else %>
+    <nav class="sticky top-0 z-20 -mx-2 mt-6 px-2 py-3 bg-gray-50/90 backdrop-blur border-b border-gray-200">
+      <ul class="flex flex-wrap gap-2">
+        <% mailers.each do |mailer_name, urls| %>
+          <li>
+            <a href="#<%= mailer_name %>"
+               class="inline-flex items-baseline gap-1.5 rounded-full border border-gray-300 bg-white px-3 py-1
+                      text-sm text-gray-700 hover:border-gray-500 hover:text-gray-900 transition-colors">
+              <%= mailer_name.titleize %>
+              <span class="text-xs text-gray-400 font-mono"><%= urls.size %></span>
+            </a>
+          </li>
+        <% end %>
+      </ul>
+    </nav>
+
+    <% mailers.each do |mailer_name, urls| %>
+      <section id="<%= mailer_name %>" class="mt-12 scroll-mt-20">
+        <h2 class="flex items-baseline gap-2 pb-2 border-b border-gray-200">
+          <span class="text-xl font-medium tracking-tight"><%= mailer_name.titleize %></span>
+          <span class="text-xs text-gray-400 font-mono"><%= mailer_name %></span>
+        </h2>
+
+        <div class="bmp-grid mt-6">
+          <% urls.each do |url| %>
+            <% label = preview_email_label(url) %>
+            <article class="group">
+              <div class="bmp-thumb rounded-md border border-gray-300 shadow-sm
+                          group-hover:border-gray-500 group-hover:shadow-md transition-all">
+                <iframe src="<%= preview_body_url(url) %>" title="<%= preview_text_for_url(url) %>" loading="lazy" tabindex="-1"></iframe>
+                <%# The iframe swallows clicks, so the link is an overlay on top of it. %>
+                <a class="bmp-hit" href="<%= preview_path_for_url(url) %>" aria-label="<%= preview_text_for_url(url) %>"></a>
+              </div>
+              <%# Two lines rather than a truncation: the tail of the name is exactly what %>
+              <%# distinguishes two neighbouring previews. The reserved height keeps the rows even. %>
+              <a href="<%= preview_path_for_url(url) %>"
+                 class="mt-2 block min-h-[2.5rem] text-sm leading-5 text-gray-700
+                        group-hover:text-gray-900 group-hover:underline line-clamp-2"
+                 title="<%= label %>"><%= label %></a>
+            </article>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
   <% end %>
+
   <%= render "footer" %>
 </div>

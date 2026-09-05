@@ -97,13 +97,25 @@ with no pipeline has no `config.assets` at all. Both used to crash the host at b
 is not a usable guard — `config.assets` is an `OrderedOptions` and answers true to everything — so
 the check is `precompile.is_a?(Array)`.
 
-**Styling comes from the TailwindCSS CDN** loaded in the engine layout — pinned to a version and
-carrying an SRI hash, because the rolling URL cannot be integrity-checked and runs in the host app's
-origin. Bumping the version means recomputing the hash. Plus hand-written CSS in the same layout for
-the iframe scale trick (`.wrap`/`.frame`, `transform: scale(0.5)`). There is no
+**Styling comes from the TailwindCSS CDN** loaded in the engine layout, pinned to a version. Do not
+add `integrity`/`crossorigin`: SRI requires a CORS request and `cdn.tailwindcss.com` sends no
+`Access-Control-Allow-Origin`, so the script is blocked outright and the whole interface renders
+unstyled — a failure that is invisible in the test suite. Plus hand-written CSS in the same layout
+for the thumbnail scale trick (`.wrap`/`.frame`, `transform: scale(0.5)`). There is no
 build step and no Tailwind config; the engine needs an internet connection to look right. The
 `app/assets/stylesheets/better_mailer_previews/application.css` file exists for the Sprockets
 manifest, not for the actual design.
+
+**The index and the show page point their iframes at different URLs, deliberately.** Thumbnails use
+`preview_body_url`, i.e. `?part=text%2Fhtml`, so a card shows the email alone; `show` keeps the full
+native preview page with its From/To/Subject chrome. Caveat carried by that choice: Rails answers
+404 for a part the message does not carry, so a mailer with no HTML part renders an error page in
+its thumbnail — its link still reaches the full preview.
+
+**Index thumbnails have a fixed card width on purpose.** They render the email at 640px and shrink
+it with `transform: scale()`, and a fluid card would need a scale derived from its own width, which
+CSS cannot express (`calc` cannot divide a length by a length). The grid stays responsive by varying
+the column count via `repeat(auto-fill, var(--bmp-card))`.
 
 ## Tests
 

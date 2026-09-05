@@ -5,16 +5,58 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <%= stylesheet_link_tag "better_mailer_previews/application", media: "all" %>
-    <%# Pinned and integrity-checked: the rolling https://cdn.tailwindcss.com URL cannot be %>
-    <%# subresource-checked, and a compromise of it would run script in the host app origin. %>
-    <script src="https://cdn.tailwindcss.com/3.4.16"
-            integrity="sha384-mS5Uq7sE90lgbBDN8xgf34ibEgbZo4gB3tfLY40ZRle+M188BQw8onzNHg6GUZaA"
-            crossorigin="anonymous"
-            referrerpolicy="no-referrer"></script>
+    <%# Pinned to a version for reproducibility. Subresource Integrity is NOT possible here: %>
+    <%# SRI requires the crossorigin attribute, hence a CORS request, and cdn.tailwindcss.com %>
+    <%# sends no Access-Control-Allow-Origin header — the script is then blocked outright and %>
+    <%# the whole interface renders unstyled. Verified against the live CDN. %>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
     <style>
-      .wrap { width: 300px; height: 450px; padding: 0; overflow: hidden; }
-      .frame { width: 600px; height: 900px; border: 1px solid black; }
-      .frame { transform: scale(0.5); transform-origin: 0 0; }
+      /*
+       * Thumbnails render the email at a realistic width and are shrunk with a
+       * transform. The card width is therefore fixed and the scale constant:
+       * a fluid card would need a scale computed from its own width, which CSS
+       * cannot express (calc cannot divide a length by a length). The grid stays
+       * responsive by varying the number of columns instead.
+       */
+      :root {
+        --bmp-width: 640px;
+        --bmp-height: 880px;
+        --bmp-scale: 0.45;
+        --bmp-card: calc(var(--bmp-width) * var(--bmp-scale));
+      }
+
+      .bmp-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, var(--bmp-card));
+        justify-content: start;
+        gap: 1.5rem 1.25rem;
+      }
+
+      .bmp-thumb {
+        position: relative;
+        width: var(--bmp-card);
+        height: calc(var(--bmp-height) * var(--bmp-scale));
+        overflow: hidden;
+        background: #fff;
+      }
+
+      .bmp-thumb iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: var(--bmp-width);
+        height: var(--bmp-height);
+        border: 0;
+        transform: scale(var(--bmp-scale));
+        transform-origin: 0 0;
+      }
+
+      /* The iframe swallows pointer events, so the whole thumbnail needs an overlay link. */
+      .bmp-hit {
+        position: absolute;
+        inset: 0;
+      }
+
       ::-webkit-resizer {
           background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor' class='w-5 h-5'><path fill-rule='evenodd' d='M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z' clip-rule='evenodd' /></svg>");
       }

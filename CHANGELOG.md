@@ -12,7 +12,9 @@
 * Sending a preview no longer `constantize`s the class name taken from the URL; the preview and its
   email must both appear in `ActionMailer::Preview.all`
 * The remembered-address cookie is now flagged `HttpOnly` and `SameSite=Lax`
-* The TailwindCSS CDN script is pinned to a version and carries a Subresource Integrity hash
+* The TailwindCSS CDN script is pinned to a version. Subresource Integrity is not possible on
+  that endpoint: SRI requires `crossorigin`, and `cdn.tailwindcss.com` sends no
+  `Access-Control-Allow-Origin` header, so the script is blocked and the page renders unstyled
 
 ### Fixed
 
@@ -44,3 +46,13 @@
 
 * Request specs covering `MailersController#index`, `#show` and `#send_email`, plus the security
   behaviours above
+
+### Interface
+
+* Rework the index: responsive grid of fixed-width cards, caption below the thumbnail instead of
+  pulled 400px on top of it, full-width mailer headers with a preview count, readable anchor pills,
+  a clickable overlay on each thumbnail (the iframe swallowed the click), and an empty state
+* Index thumbnails render the email body alone (`?part=text%2Fhtml`) instead of the native Rails
+  preview page, whose From/To/Subject chrome took a quarter of every card. The show page keeps
+  that chrome on purpose
+* Preview names wrap over two lines instead of being truncated mid-word

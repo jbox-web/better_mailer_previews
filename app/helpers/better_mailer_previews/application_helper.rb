@@ -21,6 +21,32 @@ module BetterMailerPreviews
       "Preview #{pretty_mailer_preview_name} →"
     end
 
+    # The email name alone, for a card whose section header already carries the
+    # mailer name.
+    #
+    # input: "/rails/mailers/invoice_mailer/saas"
+    # output: "Saas"
+    #
+    def preview_email_label(url)
+      url.split('/').last.to_s.titleize
+    end
+
+    # The URL of the rendered email body alone, without the From/To/Subject chrome
+    # that the native Rails preview page wraps around it. Used for the index
+    # thumbnails, where that chrome would eat a quarter of every card; the show
+    # page keeps the full preview page on purpose.
+    #
+    # Caveat: Rails answers 404 for a part the message does not carry, so a
+    # mailer with no HTML part renders an error page in its thumbnail. Its link
+    # still points at the full preview.
+    #
+    # input: "/rails/mailers/invoice_mailer/saas"
+    # output: "/rails/mailers/invoice_mailer/saas?part=text%2Fhtml"
+    #
+    def preview_body_url(url)
+      "#{url}?part=text%2Fhtml"
+    end
+
     # For generating mailer preview link paths on mailers/index
     #
     # input: "/rails/mailers/invoice_mailer/saas"

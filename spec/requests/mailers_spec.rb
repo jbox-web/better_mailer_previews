@@ -39,6 +39,12 @@ RSpec.describe 'Mailer previews' do
       expect(response.body).to include 'src="/rails/mailers/invoice_mailer/saas"'
     end
 
+    # Deliberately different from the index: show keeps the From/To/Subject chrome.
+    it 'keeps the preview chrome, unlike the index thumbnails' do
+      get '/better_mailer_previews/invoice_mailer/saas'
+      expect(response.body).to_not include 'part=text%2Fhtml'
+    end
+
     it 'passes query params through to the iframe URL' do
       get '/better_mailer_previews/invoice_mailer/saas', params: { locale: 'fr', part: 'text' }
       expect(response.body).to include 'src="/rails/mailers/invoice_mailer/saas?locale=fr&amp;part=text"'
@@ -119,6 +125,45 @@ RSpec.describe 'Mailer previews' do
       it 'still redirects' do
         expect(response).to have_http_status(:redirect)
       end
+    end
+  end
+
+  describe 'the index layout' do
+    before { get '/better_mailer_previews' }
+
+    it 'labels a card with the email name alone' do
+      expect(response.body).to include '>Saas</a>'
+    end
+
+    it 'puts the caption after the thumbnail, not on top of it' do
+      expect(response.body).to_not include '-mt-[400px]'
+    end
+
+    it 'overlays a link on the thumbnail, which the iframe would otherwise swallow' do
+      expect(response.body).to include 'class="bmp-hit"'
+    end
+
+    it 'counts the previews it renders' do
+      expect(response.body).to include '5 previews'
+    end
+
+    it 'points thumbnails at the email body, without the Rails preview chrome' do
+      expect(response.body).to include 'src="/rails/mailers/invoice_mailer/saas?part=text%2Fhtml"'
+    end
+  end
+
+  describe 'the index with no preview at all' do
+    before do
+      allow(ActionMailer::Preview).to receive(:all).and_return([])
+      get '/better_mailer_previews'
+    end
+
+    it 'still answers' do
+      expect(response).to have_http_status(:ok)
+    end
+
+    it 'explains what to do' do
+      expect(response.body).to include 'No mailer previews found'
     end
   end
 
