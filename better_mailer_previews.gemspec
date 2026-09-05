@@ -1,26 +1,27 @@
-require_relative "lib/better_mailer_previews/version"
+# frozen_string_literal: true
 
-Gem::Specification.new do |spec|
-  spec.name        = "better_mailer_previews"
-  spec.version     = BetterMailerPreviews::VERSION
-  spec.authors     = ["Harrison Broadbent"]
-  spec.email       = ["harrison@railsnotes.xyz"]
-  spec.homepage    = "https://github.com/harrison-broadbent/better_mailer_previews"
-  spec.summary     = "Better Mailer Previews is a Ruby on Rails gem that makes it easier to preview ActionMailer email templates."
-  spec.description = "Better Mailer Previews is a Ruby on Rails gem that makes it easier to preview ActionMailer email templates."
-  spec.license     = "MIT"
+require_relative 'lib/better_mailer_previews/version'
 
-  # Prevent pushing this gem to RubyGems.org. To allow pushes either set the "allowed_push_host"
-  # to allow pushing to a single host or delete this section to allow pushing to any host.
-  # spec.metadata["allowed_push_host"] = "https://example.com"
+Gem::Specification.new do |s|
+  s.name        = 'better_mailer_previews'
+  s.version     = BetterMailerPreviews::VERSION::STRING
+  s.platform    = Gem::Platform::RUBY
+  s.authors     = ['Harrison Broadbent', 'Nicolas Rodriguez']
+  s.email       = ['harrison@railsnotes.xyz', 'nico@nicoladmin.fr']
+  s.homepage    = 'https://github.com/jbox-web/better_mailer_previews'
+  s.summary     = 'A lightweight Rails engine for improved ActionMailer previews.'
+  s.description = 'Better Mailer Previews is a Ruby on Rails gem that makes it easier to preview ActionMailer email templates.'
+  s.license     = 'MIT'
+  s.metadata    = {
+    'homepage_uri'    => 'https://github.com/jbox-web/better_mailer_previews',
+    'changelog_uri'   => 'https://github.com/jbox-web/better_mailer_previews/blob/main/CHANGELOG.md',
+    'source_code_uri' => 'https://github.com/jbox-web/better_mailer_previews',
+    'bug_tracker_uri' => 'https://github.com/jbox-web/better_mailer_previews/issues',
+  }
 
-  spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = spec.homepage
-  spec.metadata["changelog_uri"] = spec.homepage
+  s.required_ruby_version = '>= 3.2.0'
 
-  spec.files = Dir.chdir(File.expand_path(__dir__)) do
-    Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
-  end
+  s.files = Dir['README.md', 'CHANGELOG.md', 'LICENSE', 'app/**/*', 'config/**/*', 'lib/**/*.rb']
 
-  spec.add_dependency "rails", ">= 5.0.0"
+  s.add_dependency 'rails', '>= 7.2'
 end

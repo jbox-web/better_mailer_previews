@@ -1,5 +1,5 @@
 <div class="max-w-7xl mx-auto">
-  <p class="text-6xl font-medium tracking-tighter">Better Mailer Previews <span class="text-xs font-light tracking-normal">v<%= BetterMailerPreviews::VERSION %></span></p>
+  <p class="text-6xl font-medium tracking-tighter">Better Mailer Previews <span class="text-xs font-light tracking-normal">v<%= BetterMailerPreviews::VERSION::STRING %></span></p>
   <div class="mt-4 grid grid-cols-4 gap-x-4 sticky top-8 z-10 border p-2 bg-gray-50/30 backdrop-blur-md w-fit rounded-sm">
     <% @urls_by_mailer.each do |mailer_name, urls| %>
       <%= link_to "▶ #{mailer_name.titleize}", "##{mailer_name}", class: "text-sm hover:underline" unless urls.empty? %>

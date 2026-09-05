@@ -1,9 +1,22 @@
-source "https://rubygems.org"
-git_source(:github) { |repo| "https://github.com/#{repo}.git" }
+# frozen_string_literal: true
 
-# Specify your gem's dependencies in better_mailer_previews.gemspec.
+source 'https://rubygems.org'
+
 gemspec
 
-gem "puma"
-gem "sqlite3"
-gem "sprockets-rails"
+# Dev libs
+gem 'appraisal', git: 'https://github.com/thoughtbot/appraisal.git'
+gem 'puma'
+gem 'rake'
+gem 'rspec-rails'
+gem 'simplecov'
+gem 'sprockets-rails'
+gem 'sqlite3', '~> 2.1.0'
+
+# Dev tools / linter
+gem 'guard-rspec',         require: false
+gem 'rubocop',             require: false
+gem 'rubocop-performance', require: false
+gem 'rubocop-rake',        require: false
+gem 'rubocop-rspec',       require: false
+gem 'rubocop-rspec_rails', require: false
