@@ -6,4 +6,8 @@ class InvoiceMailerPreview < ActionMailer::Preview
   def basic
     InvoiceMailer.basic
   end
+
+  def multipart
+    InvoiceMailer.multipart
+  end
 end

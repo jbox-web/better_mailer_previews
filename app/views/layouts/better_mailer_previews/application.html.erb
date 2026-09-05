@@ -5,7 +5,12 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <%= stylesheet_link_tag "better_mailer_previews/application", media: "all" %>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <%# Pinned and integrity-checked: the rolling https://cdn.tailwindcss.com URL cannot be %>
+    <%# subresource-checked, and a compromise of it would run script in the host app origin. %>
+    <script src="https://cdn.tailwindcss.com/3.4.16"
+            integrity="sha384-mS5Uq7sE90lgbBDN8xgf34ibEgbZo4gB3tfLY40ZRle+M188BQw8onzNHg6GUZaA"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
     <style>
       .wrap { width: 300px; height: 450px; padding: 0; overflow: hidden; }
       .frame { width: 600px; height: 900px; border: 1px solid black; }

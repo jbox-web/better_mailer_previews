@@ -7,12 +7,12 @@
   </div>
   <% @urls_by_mailer.each do |mailer_name, urls| %>
     <% next if urls.empty? %>
-    <div id=<%= mailer_name %> class="flex my-24">
+    <div id="<%= mailer_name %>" class="flex my-24">
       <p class="text-xl font-light w-64"><%= mailer_name.titleize %></p>
       <div class="border p-6 grid grid-cols-3 gap-x-8 gap-y-16">
         <% urls.each do |url| %>
           <div class="flex flex-col space-y-4 wrap">
-            <iframe src=<%= url %> frameborder="0" class="frame border border-gray-300" loading="lazy"></iframe>
+            <iframe src="<%= url %>" frameborder="0" class="frame border border-gray-300" loading="lazy"></iframe>
             <%= link_to preview_text_for_url(url), preview_path_for_url(url), class: "!-mt-[400px] hover:underline" %>
           </div>
         <% end %>

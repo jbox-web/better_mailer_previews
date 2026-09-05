@@ -48,11 +48,14 @@ the round trip. Any change to route shape must keep `mailer_path` greedy across 
 **Three string conversions tie the pieces together**, and they must stay mutually inverse:
 
 1. `MailersController#native_preview_urls_by_mailer` turns a preview class into a native preview
-   URL: `preview.name.underscore.gsub("_preview", "")` → `/rails/mailers/<mailer_path>/<email_name>`.
+   URL: `preview.name.underscore.delete_suffix("_preview")` → `/rails/mailers/<mailer_path>/<email_name>`.
+   It must stay anchored on the suffix — a `gsub` strips every occurrence and turns
+   `DailyPreviewMailerPreview` into `daily_mailer`.
 2. `ApplicationHelper#preview_path_for_url` turns that native URL back into an engine URL, prefixed
    with the engine mount point. Never hardcode the mount point.
-3. `MailersController#deliver_preview` rebuilds the preview class from the path:
-   `mailer_path.split("/").map(&:camelize).join("::") + "Preview"`, then `constantize`.
+3. `MailersController#find_preview` rebuilds the class name from the path
+   (`mailer_path.split("/").map(&:camelize).join("::") + "Preview"`) and then looks it up in
+   `ActionMailer::Preview.all`. Do not go back to `constantize`: the string comes from the URL.
 
 Break one and namespaced mailers silently 404 or raise `NameError`.
 
@@ -65,19 +68,39 @@ supported versions. Do not "simplify" it back.
 classes that branch on params keep working inside the engine. Note that `&` is HTML-escaped to
 `&amp;` in the rendered attribute — specs must expect the escaped form.
 
-**Sending is a re-render, not a forward.** `deliver_preview` instantiates the preview class, decodes
-`mail.body`, and ships the HTML through a fresh `ActionMailer::Base` *instance* using the host app's
-configured `delivery_method`. The class-level `ActionMailer::Base.mail` shortcut was removed in
-Rails 8.0 and must not come back. Headers, attachments and multipart parts of the original message
-are dropped by design. The destination address is persisted in the
-`better_mailer_previews_email_address` cookie to repopulate the form.
+**Sending is a re-render, not a forward.** `deliver_preview` instantiates the preview class, takes
+`mail.html_part || mail.text_part || mail`, and ships that part's decoded body through a fresh
+`ActionMailer::Base` *instance* using the host app's configured `delivery_method`. Two traps here:
+the class-level `ActionMailer::Base.mail` shortcut was removed in Rails 8.0 and must not come back;
+and a multipart message's own `body.decoded` is an **empty string**, so decoding `mail.body`
+directly delivers a blank email. Headers and attachments are dropped by design. The destination
+address is persisted in the `better_mailer_previews_email_address` cookie (HttpOnly, SameSite=Lax).
 
-**Controllers inherit `ActionController::Base` directly**, not the engine's `ApplicationController`
-— `MailersController` sets its own `layout` and declares `helper ApplicationHelper`, so the engine
-works in hosts running with `config.action_controller.include_all_helpers = false`.
+**The engine gates itself.** `before_action :ensure_enabled` returns 403 unless
+`BetterMailerPreviews.enabled?`, which defaults to `Rails.env.local?`. It sends mail to an address
+taken from the request with no authentication, so the gate does not rely on the host mounting it
+behind `if Rails.env.development?`.
 
-**Styling comes from the TailwindCSS CDN** loaded in the engine layout, plus hand-written CSS in the
-same layout for the iframe scale trick (`.wrap`/`.frame`, `transform: scale(0.5)`). There is no
+**Every interpolated HTML attribute must be quoted.** ERB escapes quotes and angle brackets but not
+spaces, so an unquoted `src=<%= … %>` let a crafted path append attributes to the tag. The four
+attributes in `index.html.erb` and `show.html.erb` are quoted for that reason.
+
+**`MailersController` inherits `ActionController::Base` directly** and is the engine's only
+controller — the generated `ApplicationController`/`ApplicationRecord`/`ApplicationJob`/
+`ApplicationMailer` scaffolding was removed as dead code. It sets its own `layout` and declares
+`helper ApplicationHelper`, so the engine works in hosts running with
+`config.action_controller.include_all_helpers = false`.
+
+**`config/initializers/assets.rb` must stay guarded.** It appends to `config.assets.precompile`,
+which only Sprockets provides; a Propshaft host has `config.assets` without `precompile`, and a host
+with no pipeline has no `config.assets` at all. Both used to crash the host at boot. `respond_to?`
+is not a usable guard — `config.assets` is an `OrderedOptions` and answers true to everything — so
+the check is `precompile.is_a?(Array)`.
+
+**Styling comes from the TailwindCSS CDN** loaded in the engine layout — pinned to a version and
+carrying an SRI hash, because the rolling URL cannot be integrity-checked and runs in the host app's
+origin. Bumping the version means recomputing the hash. Plus hand-written CSS in the same layout for
+the iframe scale trick (`.wrap`/`.frame`, `transform: scale(0.5)`). There is no
 build step and no Tailwind config; the engine needs an internet connection to look right. The
 `app/assets/stylesheets/better_mailer_previews/application.css` file exists for the Sprockets
 manifest, not for the actual design.
@@ -86,19 +109,23 @@ manifest, not for the actual design.
 
 RSpec with a Rails dummy app under `spec/dummy/`. Fixture mailers and their `ActionMailer::Preview`
 classes live in `spec/dummy/app/mailers/` and `spec/dummy/spec/mailers/previews/`, wired through
-`config.action_mailer.preview_paths` in the dummy's `application.rb` — both a plain mailer and a
-namespaced one (`Test::TestMailer`), because namespacing is where this engine breaks first.
+`config.action_mailer.preview_paths` in the dummy's `application.rb`. Each fixture exists for a
+specific trap: `Test::TestMailer` for namespacing, `InvoiceMailer#multipart` for the empty
+multipart body, `DailyPreviewMailer` for a class name carrying `_preview` twice. Do not delete one
+without deleting the spec it anchors.
 
 Spec types are inferred from file location. `spec/dummy/**/*` is excluded from Rubocop. Coverage is
 emitted by SimpleCov into `coverage/`.
 
-When touching the controller or the helper, add the case to `spec/requests/mailers_spec.rb` — it is
-the only thing exercising the actual rendering path.
+Two request specs exercise the actual rendering path: `spec/requests/mailers_spec.rb` for
+behaviour, `spec/requests/mailers_security_spec.rb` for the attribute escaping, the environment
+gate, the preview allow-list, CSRF and the cookie flags. When touching the controller or the helper,
+add the case to whichever of the two it belongs in.
 
 ## Conventions
 
 - The gem is meant for the host's `:development` group only; assume `Rails.env.development?` at the
   mount point and do not add production-safe assumptions that complicate the code.
 - `s.files` in the gemspec globs `README.md`, `CHANGELOG.md`, `LICENSE`, `app/**/*`, `config/**/*`
-  and `lib/**/*.rb` — 44 files. Note the last pattern is `.rb` only, so `lib/tasks/*.rake` is not
-  packaged; anything that must ship from `lib` has to be a `.rb` file.
+  and `lib/**/*.rb`. Note the last pattern is `.rb` only, so a `.rake` file under `lib` would not be
+  packaged.

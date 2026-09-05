@@ -5,7 +5,7 @@ source 'https://rubygems.org'
 gemspec
 
 # Dev libs
-gem 'appraisal', git: 'https://github.com/thoughtbot/appraisal.git'
+gem 'appraisal', git: 'https://github.com/thoughtbot/appraisal.git', ref: '602cdd9b5f8cb8f36992733422f69312b172f427'
 gem 'puma'
 gem 'rake'
 gem 'rspec-rails'

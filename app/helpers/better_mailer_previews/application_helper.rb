@@ -12,7 +12,11 @@ module BetterMailerPreviews
     def preview_text_for_url(url)
       camelized = url.split('/')[3...].map(&:camelize)
       last_element = camelized.pop
-      pretty_mailer_preview_name = "#{camelized.join('/')}.#{last_element}"
+
+      # A URL with a single segment after /rails/mailers leaves nothing to
+      # prefix, and must not render as "Preview .Foo".
+      pretty_mailer_preview_name =
+        camelized.empty? ? last_element.to_s : "#{camelized.join('/')}.#{last_element}"
 
       "Preview #{pretty_mailer_preview_name} →"
     end
@@ -39,7 +43,10 @@ module BetterMailerPreviews
           candidate.app.respond_to?(:app) && candidate.app.app == BetterMailerPreviews::Engine
         end
 
-        route ? route.path.spec.to_s : ''
+        # `chomp` matters for an engine mounted at "/": the raw spec is "/", which
+        # would build "//invoice_mailer/saas" — a protocol-relative URL pointing at
+        # the host "invoice_mailer".
+        route ? route.path.spec.to_s.chomp('/') : ''
       end
   end
 end

@@ -16,6 +16,7 @@
       </div>
     <% end %>
     <p class="text-xs text-gray-400 mt-1 w-64"><%= flash[:notice] %></p>
+    <p class="text-xs text-red-600 mt-1 w-64"><%= flash[:alert] %></p>
   </div>
 </div>
 <div class="flex mt-6 mb-4 py-4 border gap-x-8 items-center">
@@ -29,7 +30,7 @@
       </div>
     </div>
     <div class="bg-gray-950 px-2 rounded-b-lg pb-2">
-      <iframe src=<%= @url_for_mailer %> frameborder="0" class="w-full h-[75vh] rounded-md bg-white"></iframe>
+      <iframe src="<%= @url_for_mailer %>" frameborder="0" class="w-full h-[75vh] rounded-md bg-white"></iframe>
     </div>
   </div>
   <div class="w-1/4">
@@ -39,7 +40,7 @@
       <div class="h-[46px] w-[3px] bg-gray-800 absolute -start-[17px] top-[178px] rounded-s-lg"></div>
       <div class="h-[64px] w-[3px] bg-gray-800 absolute -end-[17px] top-[142px] rounded-e-lg"></div>
       <div class="rounded-[2rem] overflow-hidden w-[292px] h-[612px] bg-white dark:bg-gray-800">
-        <iframe src=<%= @url_for_mailer %> frameborder="0" class="w-[292px] h-[612px]"></iframe>
+        <iframe src="<%= @url_for_mailer %>" frameborder="0" class="w-[292px] h-[612px]"></iframe>
       </div>
     </div>
   </div>

@@ -36,12 +36,12 @@ RSpec.describe 'Mailer previews' do
 
     it 'points the iframe at the native preview' do
       get '/better_mailer_previews/invoice_mailer/saas'
-      expect(response.body).to include 'src=/rails/mailers/invoice_mailer/saas'
+      expect(response.body).to include 'src="/rails/mailers/invoice_mailer/saas"'
     end
 
     it 'passes query params through to the iframe URL' do
       get '/better_mailer_previews/invoice_mailer/saas', params: { locale: 'fr', part: 'text' }
-      expect(response.body).to include 'src=/rails/mailers/invoice_mailer/saas?locale=fr&amp;part=text'
+      expect(response.body).to include 'src="/rails/mailers/invoice_mailer/saas?locale=fr&amp;part=text"'
     end
   end
 
@@ -85,6 +85,54 @@ RSpec.describe 'Mailer previews' do
     it 'resolves a namespaced preview class' do
       send_preview('/better_mailer_previews/test/test_mailer/github_test/send')
       expect(ActionMailer::Base.deliveries.last.subject).to eq 'Test::TestMailerPreview.github_test (via BetterMailerPreviews)'
+    end
+
+    # A mailer with both an .html.erb and a .text.erb renders a multipart
+    # message, whose own body.decoded is empty — that used to be delivered
+    # verbatim, so the recipient got a blank email and the page said "sent".
+    context 'with a multipart preview' do
+      before { send_preview('/better_mailer_previews/invoice_mailer/multipart/send') }
+
+      it 'delivers a non-empty body' do
+        expect(ActionMailer::Base.deliveries.last.body.decoded).to_not be_empty
+      end
+
+      it 'delivers the HTML part' do
+        expect(ActionMailer::Base.deliveries.last.body.decoded).to include 'Multipart HTML part'
+      end
+
+      it 'announces the delivery' do
+        expect(flash[:notice]).to start_with 'sent to someone@example.com'
+      end
+    end
+
+    context 'when the delivery raises' do
+      before do
+        allow(ActionMailer::Base).to receive(:new).and_raise(Errno::ECONNREFUSED)
+        send_preview
+      end
+
+      it 'reports the failure instead of raising' do
+        expect(flash[:alert]).to start_with 'delivery failed — Errno::ECONNREFUSED'
+      end
+
+      it 'still redirects' do
+        expect(response).to have_http_status(:redirect)
+      end
+    end
+  end
+
+  describe 'preview class names containing the suffix twice' do
+    before { get '/better_mailer_previews' }
+
+    # DailyPreviewMailerPreview underscores to "daily_preview_mailer_preview".
+    # A gsub would strip both occurrences and yield "daily_mailer".
+    it 'only strips the trailing _preview' do
+      expect(response.body).to include '/rails/mailers/daily_preview_mailer/digest'
+    end
+
+    it 'does not strip the inner occurrence' do
+      expect(response.body).to_not include '/rails/mailers/daily_mailer/digest'
     end
   end
 end

@@ -29,9 +29,7 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
-
-      - name: Bundler
-        run: bundle install
+          bundler-cache: true
 
       - name: Rubocop
         run: bin/rubocop
@@ -70,7 +68,12 @@ jobs:
       - name: Run RSpec
         run: bin/rspec
 
+      # Skipped rather than failing the whole matrix when the repository has no
+      # coverage token configured.
       - name: Publish code coverage
+        if: ${{ env.QLTY_COVERAGE_TOKEN != '' }}
+        env:
+          QLTY_COVERAGE_TOKEN: ${{ secrets.QLTY_COVERAGE_TOKEN }}
         uses: qltysh/qlty-action/coverage@v2
         with:
           token: ${{ secrets.QLTY_COVERAGE_TOKEN }}

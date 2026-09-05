@@ -87,6 +87,12 @@ This engine will display all the [Actionmailer Previews](https://guides.rubyonra
 
 For all the mailers you'd like to preview, you need to set up the corresponding `ActionMailer::Preview` class. Once you've done that, this engine will automatically pull them all in and let you preview them!
 
+## Asset pipeline
+
+The engine ships a single stylesheet and works with Sprockets, with Propshaft, and with no asset
+pipeline at all — its precompile hint is applied only when the host actually uses Sprockets. You do
+not need to add `sprockets-rails` for this gem.
+
 ## Other things to note
 
 - You need an internet connection for this to engine to work properly. This engine tries to load the TailwindCSS package via a CDN, to handle the app styling. Your browser will cache the package after you first download it though, which is handy.

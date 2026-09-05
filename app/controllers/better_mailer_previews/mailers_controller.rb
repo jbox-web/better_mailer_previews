@@ -8,6 +8,8 @@ module BetterMailerPreviews
     # otherwise leave the engine views without our own helper.
     helper ApplicationHelper
 
+    before_action :ensure_enabled
+
     def index
       @urls_by_mailer = native_preview_urls_by_mailer
     end
@@ -25,23 +27,30 @@ module BetterMailerPreviews
     def send_email
       email_address = params[:email_address]
 
-      # save email in a cookie so we can re-populate the form
-      cookies[:better_mailer_previews_email_address] = email_address
+      remember_email_address(email_address)
+      report_delivery(email_address)
 
-      deliver_preview(params[:mailer_path], params[:email_type], email_address)
-
-      flash[:notice] = delivery_notice_for(email_address)
-      redirect_back(fallback_location: root_path)
+      redirect_back(fallback_location: root_path, allow_other_host: false)
     end
 
     private
 
+      def ensure_enabled
+        head :forbidden unless BetterMailerPreviews.enabled?
+      end
+
       # Maps every ActionMailer::Preview of the host app to the URLs of the
       # native Rails previews it exposes, which the index embeds in iframes.
       #
+      # `ActionMailer::Preview.all` is deliberately not memoized: in development
+      # it is what picks up a preview class written since the last page load.
+      #
       def native_preview_urls_by_mailer
         ActionMailer::Preview.all.each_with_object({}) do |preview, urls_by_mailer|
-          mailer_name = preview.name.underscore.gsub('_preview', '')
+          # Anchored on the suffix, not a plain gsub: a class named
+          # MyPreviewMailerPreview would otherwise lose both occurrences and
+          # yield "my_mailer".
+          mailer_name = preview.name.underscore.delete_suffix('_preview')
 
           urls_by_mailer[mailer_name] = preview.emails.map do |email|
             "/rails/mailers/#{mailer_name}/#{email.underscore}"
@@ -49,33 +58,77 @@ module BetterMailerPreviews
         end
       end
 
-      def delivery_notice_for(email_address)
-        "sent to #{email_address} (via #{Rails.application.config.action_mailer.delivery_method})"
+      # save email in a cookie so we can re-populate the form
+      def remember_email_address(email_address)
+        cookies[:better_mailer_previews_email_address] = {
+          value:     email_address,
+          httponly:  true,
+          same_site: :lax,
+        }
       end
 
-      # Instantiate the preview class (ie: InvoiceMailerPreview), render its
-      # preview html into a string, then send that string to the address from
-      # the form submission.
+      def report_delivery(email_address)
+        deliver_preview(params[:mailer_path], params[:email_type], email_address)
+        flash[:notice] = "sent to #{email_address} (via #{delivery_method})"
+      rescue PreviewNotFound, EmptyPreviewBody => e
+        flash[:alert] = e.message
+      rescue StandardError => e
+        # Anything the delivery itself raises: an unreachable SMTP host, a
+        # rejected recipient. Reported rather than swallowed — both the class and
+        # the message reach the page.
+        flash[:alert] = "delivery failed — #{e.class}: #{e.message}"
+      end
+
+      def delivery_method
+        Rails.application.config.action_mailer.delivery_method || 'default'
+      end
+
+      # Look the preview up among the ones the host actually declares, rather
+      # than `constantize`-ing whatever the URL carries.
       #
       # mailer_path: underscore_case of base mailer path | test/invoice_mailer
       # email_type: string mailer method to call on class | "round"
-      # email_address: string email address to send to | "test@t.com"
+      #
+      def find_preview(mailer_path, email_type)
+        wanted = mailer_path.split('/').map(&:camelize).join('::').concat('Preview')
+        preview = ActionMailer::Preview.all.find { |klass| klass.name == wanted }
+
+        raise PreviewNotFound.new("unknown mailer preview: #{wanted}") if preview.nil?
+        raise PreviewNotFound.new("unknown preview email: #{wanted}##{email_type}") unless preview.emails.include?(email_type)
+
+        [preview, wanted]
+      end
+
+      # A mailer with both an .html.erb and a .text.erb renders a multipart
+      # message, whose own `body.decoded` is an empty string — sending that
+      # delivers a blank email. Pick the part that actually carries content.
+      #
+      def rendered_preview(preview, email_type, preview_class_string)
+        mail = preview.new.public_send(email_type).message
+        part = mail.html_part || mail.text_part || mail
+        body = part.body.decoded
+
+        raise EmptyPreviewBody.new("#{preview_class_string}##{email_type} rendered an empty body") if body.empty?
+
+        [body, part.content_type || 'text/html']
+      end
+
+      # Render the preview into a string and send that string to the address from
+      # the form submission.
       #
       def deliver_preview(mailer_path, email_type, email_address)
-        preview_class_string = mailer_path.split('/').map(&:camelize).join('::').concat('Preview')
-        preview_method = email_type.to_sym
-
-        mail = preview_class_string.constantize.new.public_send(preview_method).message
+        preview, preview_class_string = find_preview(mailer_path, email_type)
+        body, content_type = rendered_preview(preview, email_type, preview_class_string)
 
         # NOTE: this goes through an ActionMailer::Base *instance*. The class-level
         # `ActionMailer::Base.mail` shortcut worked up to Rails 7.2 but was removed
         # in Rails 8.0.
         ActionMailer::Base.new.mail(
-          content_type: 'text/html',
+          content_type: content_type,
           from:         'better-mailer-previews@railsnotes.xyz',
           to:           email_address,
-          subject:      "#{preview_class_string}.#{preview_method} (via BetterMailerPreviews)",
-          body:         mail.body.decoded
+          subject:      "#{preview_class_string}.#{email_type} (via BetterMailerPreviews)",
+          body:         body
         ).deliver
       end
   end
