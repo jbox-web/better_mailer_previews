@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module BetterMailerPreviews
   module ApplicationHelper
 
@@ -8,11 +10,11 @@ module BetterMailerPreviews
     # output: "Preview InvoiceMailer.SaaS →"
     #
     def preview_text_for_url(url)
-      camelized = url.split("/")[3...].map { |element| element.camelize }
+      camelized = url.split('/')[3...].map { |element| element.camelize }
       last_element = camelized.pop
-      pretty_mailer_preview_name = camelized.join("/") + "." + last_element
+      pretty_mailer_preview_name = "#{camelized.join('/')}.#{last_element}"
 
-      return "Preview #{pretty_mailer_preview_name} →"
+      "Preview #{pretty_mailer_preview_name} →"
     end
 
     # For generating mailer preview link paths on mailers/index
@@ -21,8 +23,23 @@ module BetterMailerPreviews
     # output: /better_mailer_previews/invoice_mailer/basic
     #
     def preview_path_for_url(url)
-      mounted_engine_path = BetterMailerPreviews::Engine.routes.find_script_name({})
-      url.split("/")[3..].join("/").prepend("#{mounted_engine_path}/")
+      "#{engine_mount_path}/#{url.split('/')[3..].join('/')}"
     end
+
+    private
+
+      # Where the host application mounted this engine.
+      #
+      # Rails <= 7.2 answered this with `Engine.routes.find_script_name({})`, but
+      # since Rails 8.0 that returns an empty string. The mount point is still
+      # readable from the application route set, which is stable across versions.
+      #
+      def engine_mount_path
+        route = Rails.application.routes.routes.find do |candidate|
+          candidate.app.respond_to?(:app) && candidate.app.app == BetterMailerPreviews::Engine
+        end
+
+        route ? route.path.spec.to_s : ''
+      end
   end
 end
