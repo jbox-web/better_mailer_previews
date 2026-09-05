@@ -99,5 +99,6 @@ the only thing exercising the actual rendering path.
 
 - The gem is meant for the host's `:development` group only; assume `Rails.env.development?` at the
   mount point and do not add production-safe assumptions that complicate the code.
-- `spec.files` in the gemspec globs `README.md`, `CHANGELOG.md`, `LICENSE`, `app`, `config` and
-  `lib` — code placed anywhere else will not ship.
+- `s.files` in the gemspec globs `README.md`, `CHANGELOG.md`, `LICENSE`, `app/**/*`, `config/**/*`
+  and `lib/**/*.rb` — 44 files. Note the last pattern is `.rb` only, so `lib/tasks/*.rake` is not
+  packaged; anything that must ship from `lib` has to be a `.rb` file.
