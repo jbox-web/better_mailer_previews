@@ -1,5 +1,12 @@
 # Better Mailer Previews — A lightweight Rails engine for improved email previews.
 
+[![CI](https://github.com/jbox-web/better_mailer_previews/actions/workflows/ci.yml/badge.svg)](https://github.com/jbox-web/better_mailer_previews/actions/workflows/ci.yml)
+
+> This is the jbox-web fork of [harrison-broadbent/better_mailer_previews](https://github.com/harrison-broadbent/better_mailer_previews),
+> maintained for current Ruby and Rails versions. It is not published to RubyGems: install it from this repository.
+
+Requires Ruby >= 3.2 and Rails >= 7.2. Tested against Rails 7.2, 8.0 and 8.1.
+
 Better Mailer Previews is a Ruby on Rails gem that **makes previewing all your ActionMailer email templates easier.**
 
 This gem/engine builds on top of native Rails mailer previews, with a few key enhancements like —
@@ -31,7 +38,7 @@ This gem is my idea brought to life, and I hope you'll find it useful!
 ```ruby
 group :development do
   ...
-  gem "better_mailer_previews"
+  gem "better_mailer_previews", git: "https://github.com/jbox-web/better_mailer_previews.git"
 end
 ```
 
@@ -94,6 +101,12 @@ If you like this gem, you'll probably like some of my other work (all Ruby on Ra
 - [RailsNotes UI, a library of ActionMailer email templates and components](https://railsnotesui.xyz)
 
 If you want updates, you can also [follow me on Twitter](https://twitter.com/hrrsnbbnt)
+
+## Contributing
+
+Run the suite with `bin/rspec` and the linter with `bin/rubocop`. The gem is tested against
+several Rails versions through [appraisal](https://github.com/thoughtbot/appraisal):
+`BUNDLE_GEMFILE=gemfiles/rails_8.1.gemfile bin/rspec`.
 
 ## License
 
