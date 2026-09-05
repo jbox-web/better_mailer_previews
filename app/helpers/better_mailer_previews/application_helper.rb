@@ -10,7 +10,7 @@ module BetterMailerPreviews
     # output: "Preview InvoiceMailer.SaaS →"
     #
     def preview_text_for_url(url)
-      camelized = url.split('/')[3...].map { |element| element.camelize }
+      camelized = url.split('/')[3...].map(&:camelize)
       last_element = camelized.pop
       pretty_mailer_preview_name = "#{camelized.join('/')}.#{last_element}"
 

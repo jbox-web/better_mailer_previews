@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-RSpec.describe BetterMailerPreviews::ApplicationHelper, type: :helper do
+RSpec.describe BetterMailerPreviews::ApplicationHelper do
   describe '#preview_text_for_url' do
     it 'generates the preview text for a URL' do
       url = '/rails/mailers/invoice_mailer/saas'

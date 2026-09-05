@@ -18,6 +18,9 @@ module Dummy
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w(assets tasks))
 
+    # Mailer previews used by the specs live next to them, not in the default test/mailers/previews
+    config.action_mailer.preview_paths = [Rails.root.join("spec/mailers/previews").to_s]
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files
